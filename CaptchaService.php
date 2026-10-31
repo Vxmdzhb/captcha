@@ -10,6 +10,9 @@ use AstrX\Captcha\Diagnostic\CaptchaExpiredDiagnostic;
 use AstrX\Captcha\Diagnostic\CaptchaNotFoundDiagnostic;
 use AstrX\Captcha\Diagnostic\CaptchaWrongDiagnostic;
 use AstrX\Config\InjectConfig;
+use AstrX\I18n\Translator;
+use AstrX\Routing\UrlGenerator;
+use AstrX\Template\TemplateVars;
 use AstrX\Result\Diagnostics;
 use AstrX\Result\Result;
 
@@ -67,6 +70,22 @@ final class CaptchaService
     public function setReloadEnabled(bool $v): void { $this->reloadEnabled = $v; }
 
     public function reloadEnabled(): bool { return $this->reloadEnabled; }
+
+    /**
+     * Sets what the captcha partial needs for its reload link: the frame URL,
+     * the has_captcha_frame flag, and the link's label. With reload off, or no
+     * captcha on the form, the partial shows a plain image instead.
+     */
+    public function presentReload(TemplateVars $ctx, UrlGenerator $urlGen, Translator $t, string $captchaId): void
+    {
+        $frameUrl = $captchaId !== '' && $this->reloadEnabled
+            ? $urlGen->toPage($t->t('WORDING_CAPTCHA_FRAME')) . '?cid=' . $captchaId
+            : '';
+        $ctx->set('captcha_frame_url', $frameUrl);
+        $ctx->set('has_captcha_frame', $frameUrl !== '');
+        $t->load('Captcha');
+        $ctx->set('captcha_reload_label', $t->t('captcha.reload', fallback: 'New captcha'));
+    }
 
     public function __construct(
         private readonly CaptchaRepository $repository,

@@ -21,12 +21,12 @@ use AstrX\Kernel\AbstractController;
  *   <iframe src="/{locale}/captcha-frame?cid={captcha_id}"></iframe>
  *
  * Behaviour:
- *   - GET without ?refresh: renders the current image + a "reload" link.
+ *   - GET without ?refresh: renders the current image.
  *   - GET with ?refresh=1: calls CaptchaService::regenerate() on the same
  *     id (new text, new hash, same id), then renders the new image.
  *
- * The reload link\'s target is the iframe itself (default target="_self")
- * so only the iframe navigates; the parent page is untouched. This is the
+ * The reload link sits in the parent form, under the frame, with the frame
+ * as its target, so only the iframe navigates; the parent page is untouched. This is the
  * whole point — the user gets a new captcha without losing whatever they
  * typed in the parent form.
  *
@@ -52,9 +52,9 @@ final class CaptchaFrameController extends AbstractController
     /** @return Result<mixed> */
     public function handle(): Result
     {
-        // Load the Captcha translation domain up front so both the error path
-        // and the reload label resolve to localized strings. This controller
-        // renders its own iframe document and pulls in no other domains.
+        // Load the Captcha translation domain up front so the error path
+        // resolves to localized strings. This controller renders its own
+        // iframe document and pulls in no other domains.
         $this->t->load('Captcha');
 
         $cid     = self::queryStr($this->request, 'cid', '');
@@ -72,7 +72,7 @@ final class CaptchaFrameController extends AbstractController
             $this->captchaService->regenerate($cid)->drainTo($this->collector);
         }
 
-        // Build the image and reload URLs. Both use the current locale so the
+        // Build the image URL. It uses the current locale so the
         // iframe stays inside the locale boundary. A nonce in the image URL
         // forces the browser to actually re-fetch the image after a reload
         // (the Cache-Control: no-store header should be enough, but the nonce
@@ -84,13 +84,9 @@ final class CaptchaFrameController extends AbstractController
         // by id without a hardcoded English fallback, exactly like the sibling
         // controllers (Login/Comment/Register) do.
         $imageSlug  = $this->t->t('WORDING_CAPTCHA_IMAGE');
-        $frameSlug  = $this->t->t('WORDING_CAPTCHA_FRAME');
 
         $imageUrl   = '/' . $locale . '/' . $imageSlug . '?cid=' . $cid
                     . '&v=' . bin2hex(random_bytes(4));
-        $reloadUrl  = '/' . $locale . '/' . $frameSlug . '?cid=' . $cid . '&refresh=1';
-
-        $reloadLabel = $this->t->t('captcha.reload', fallback: 'New captcha');
 
         // Emit minimal HTML. We use an inline <style> for layout because the
         // iframe runs in its own document context and inheriting the parent
@@ -106,8 +102,6 @@ final class CaptchaFrameController extends AbstractController
         }
 
         $imgHtml    = htmlspecialchars($imageUrl,  ENT_QUOTES, 'UTF-8');
-        $reloadHtml = htmlspecialchars($reloadUrl, ENT_QUOTES, 'UTF-8');
-        $labelHtml  = htmlspecialchars($reloadLabel, ENT_QUOTES, 'UTF-8');
 
         echo <<<HTML
 <!DOCTYPE html>
@@ -118,12 +112,10 @@ final class CaptchaFrameController extends AbstractController
 <style>
     body { margin: 0; padding: 0; font: 13px sans-serif; }
     img  { display: block; max-width: 100%; height: auto; }
-    a    { display: inline-block; margin-top: 2px; color: inherit; }
 </style>
 </head>
 <body>
 <img src="{$imgHtml}" alt="captcha">
-<a href="{$reloadHtml}">↻ {$labelHtml}</a>
 </body>
 </html>
 HTML;

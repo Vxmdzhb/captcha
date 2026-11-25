@@ -79,7 +79,7 @@ final class CaptchaService
     public function presentReload(TemplateVars $ctx, UrlGenerator $urlGen, Translator $t, string $captchaId): void
     {
         $frameUrl = $captchaId !== '' && $this->reloadEnabled
-            ? $urlGen->toPage($t->t('WORDING_CAPTCHA_FRAME')) . '?cid=' . $captchaId
+            ? $urlGen->toPage($t->t('WORDING_CAPTCHA_FRAME'), ['cid' => $captchaId])
             : '';
         $ctx->set('captcha_frame_url', $frameUrl);
         $ctx->set('has_captcha_frame', $frameUrl !== '');

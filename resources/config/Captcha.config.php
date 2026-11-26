@@ -15,6 +15,11 @@ return [
         'reload_enabled' => false,
     ],
     'CaptchaRenderer' => [
+        // Difficulty per form (0 easy, 1 medium, 2 hard); Admin → Captcha.
+        'login_captcha_difficulty'    => 1,
+        'register_captcha_difficulty' => 1,
+        'recover_captcha_difficulty'  => 1,
+        'comment_captcha_difficulty'  => 1,
         'image_width' => 1,
         'image_height' => 1,
         'background_color' => '000000',

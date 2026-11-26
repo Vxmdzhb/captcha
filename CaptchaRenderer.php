@@ -117,6 +117,33 @@ final class CaptchaRenderer
     public function setCaptchaLength(int $v): void { if ($v > 0) $this->captchaLength = min(64, $v); }
     #[InjectConfig('captcha_type')]
     public function setCaptchaType(int $v): void { $this->captchaType = CaptchaType::tryFrom($v) ?? CaptchaType::MEDIUM; }
+    /** @var array<string, CaptchaType> form context ('login', …) => its difficulty */
+    private array $contextTypes = [];
+
+    // Per-form difficulty, set in Admin → Captcha. A form without its own
+    // setting uses captcha_type.
+    #[InjectConfig('login_captcha_difficulty')]
+    public function setLoginDifficulty(int $v): void { $this->setContextType('login', $v); }
+    #[InjectConfig('register_captcha_difficulty')]
+    public function setRegisterDifficulty(int $v): void { $this->setContextType('register', $v); }
+    #[InjectConfig('recover_captcha_difficulty')]
+    public function setRecoverDifficulty(int $v): void { $this->setContextType('recover', $v); }
+    #[InjectConfig('comment_captcha_difficulty')]
+    public function setCommentDifficulty(int $v): void { $this->setContextType('comment', $v); }
+
+    private function setContextType(string $context, int $v): void
+    {
+        $this->contextTypes[$context] = CaptchaType::tryFrom($v) ?? CaptchaType::MEDIUM;
+    }
+
+    public function captchaType(): CaptchaType { return $this->captchaType; }
+
+    /** The difficulty configured for a form, or the default one. */
+    public function typeFor(string $context): CaptchaType
+    {
+        return $this->contextTypes[$context] ?? $this->captchaType;
+    }
+
     #[InjectConfig('font_size')]
     public function setFontSize(int $v): void { if ($v > 0) $this->fontSize = min(512, $v); }
     #[InjectConfig('font_file')]

@@ -131,8 +131,25 @@ final class CaptchaService
      */
     public function generateWithType(CaptchaType $type): Result
     {
+        $default = $this->renderer->captchaType();
         $this->renderer->setCaptchaType($type->value);
-        return $this->generate();
+        try {
+            return $this->generate();
+        } finally {
+            $this->renderer->setCaptchaType($default->value);
+        }
+    }
+
+    /**
+     * Generate a captcha at the difficulty configured for one form: 'login',
+     * 'register', 'recover' or 'comment' (Admin → Captcha). Other names get
+     * the default difficulty.
+     *
+     * @return Result<array{id: string, image_b64: string}>
+     */
+    public function generateFor(string $context): Result
+    {
+        return $this->generateWithType($this->renderer->typeFor($context));
     }
 
     /**

@@ -82,6 +82,9 @@ final class CaptchaService
             ? $urlGen->toPage($t->t('WORDING_CAPTCHA_FRAME'), ['cid' => $captchaId])
             : '';
         $ctx->set('captcha_frame_url', $frameUrl);
+        $ctx->set('captcha_refresh_url', $frameUrl !== ''
+            ? $urlGen->toPage($t->t('WORDING_CAPTCHA_FRAME'), ['cid' => $captchaId, 'refresh' => 1])
+            : '');
         $ctx->set('has_captcha_frame', $frameUrl !== '');
         $t->load('Captcha');
         $ctx->set('captcha_reload_label', $t->t('captcha.reload', fallback: 'New captcha'));

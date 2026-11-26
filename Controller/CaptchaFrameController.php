@@ -8,17 +8,17 @@ use AstrX\Http\Request;
 use AstrX\I18n\Translator;
 use AstrX\Result\DiagnosticsCollector;
 use AstrX\Result\Result;
-use AstrX\Routing\CurrentUrl;
+use AstrX\Routing\UrlGenerator;
 use AstrX\Kernel\AbstractController;
 
 /**
  * Serves the iframe content for the reloadable captcha widget.
  *
- * URL: /<locale>/captcha-frame?cid=<id>[&refresh=1]
+ * URL: /<locale>/captcha-frame/cid/<id>[/refresh/1] (query mode: ?cid=…)
  *
  * The parent form (login, register, comment, ...) embeds this as:
  *
- *   <iframe src="/{locale}/captcha-frame?cid={captcha_id}"></iframe>
+ *   <iframe src="/{locale}/captcha-frame/cid/{captcha_id}"></iframe>
  *
  * Behaviour:
  *   - GET without ?refresh: renders the current image.
@@ -44,7 +44,7 @@ final class CaptchaFrameController extends AbstractController
         private readonly Request            $request,
         private readonly CaptchaService     $captchaService,
         private readonly Translator         $t,
-        private readonly CurrentUrl         $currentUrl,
+        private readonly UrlGenerator       $urlGen,
     ) {
         parent::__construct($collector);
     }
@@ -72,21 +72,17 @@ final class CaptchaFrameController extends AbstractController
             $this->captchaService->regenerate($cid)->drainTo($this->collector);
         }
 
-        // Build the image URL. It uses the current locale so the
-        // iframe stays inside the locale boundary. A nonce in the image URL
-        // forces the browser to actually re-fetch the image after a reload
-        // (the Cache-Control: no-store header should be enough, but the nonce
-        // is belt-and-braces).
-        $lang       = $this->currentUrl->get('lang', 'en');
-        $locale     = is_scalar($lang) ? (string) $lang : 'en';
+        // Build the image URL with the router (current locale, either URL
+        // mode). A nonce in the image URL forces the browser to actually
+        // re-fetch the image after a reload (the Cache-Control: no-store
+        // header should be enough, but the nonce is belt-and-braces).
         // Routing slugs live in the shared 'pages' domain (loaded globally — the
         // router already resolved this very slug to reach us), so we look them up
         // by id without a hardcoded English fallback, exactly like the sibling
         // controllers (Login/Comment/Register) do.
         $imageSlug  = $this->t->t('WORDING_CAPTCHA_IMAGE');
 
-        $imageUrl   = '/' . $locale . '/' . $imageSlug . '?cid=' . $cid
-                    . '&v=' . bin2hex(random_bytes(4));
+        $imageUrl   = $this->urlGen->toPage($imageSlug, ['cid' => $cid, 'v' => bin2hex(random_bytes(4))]);
 
         // Emit minimal HTML. We use an inline <style> for layout because the
         // iframe runs in its own document context and inheriting the parent

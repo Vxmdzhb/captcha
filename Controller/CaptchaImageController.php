@@ -13,7 +13,7 @@ use AstrX\Kernel\AbstractController;
 /**
  * Serves the captcha image as a raw PNG response.
  *
- * URL: /<locale>/captcha-image?cid=<captcha-id>
+ * URL: /<locale>/captcha-image/cid/<captcha-id> (query mode: ?cid=…)
  *
  * This endpoint is used by the iframe-reloadable captcha system. The
  * captcha record\'s plaintext is fetched from the DB, the image is
